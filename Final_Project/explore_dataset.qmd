@@ -1,0 +1,213 @@
+# Exploring "sharkresignts.csv"
+
+```{r}
+bite_data <- read.csv("data/sharkresights.csv")
+
+# View(bite_data)
+summary(bite_data)
+
+unique(bite_data$area)
+length(unique(bite_data$area))
+
+unique(bite_data$obssex)
+unique(bite_data$obsage)
+length(unique(bite_data$resightID)) # 225 resight ids
+length(unique(bite_data$animalID))  #106 animals
+
+unique(bite_data$markobs)
+unique(bite_data$markobspos)
+
+unique(bite_data$pctmolt)
+unique(bite_data$area)
+
+dim(bite_data)
+sort(unique(bite_data$season))
+```
+
+## Columns Explained
+
+All these rows are elephant seals that hang out at Ano Nuevo State Park.
+
+-   resightID:
+
+    -   All of the rows have unique resightIDs
+
+-   animalID:
+
+    -   ID of the animal observed
+
+    -   numerical and repeats
+
+-   season:
+
+    -   numerical; the year the data was recorded (XXXX)
+
+-   date:
+
+    -   char; MM/DD/YY
+
+-   area:
+
+    -   char
+    -   Abbreviations of the area the seal was found
+
+-   regionID:
+
+    -   numerical, discrete
+
+    -   range from 1-17; the numerical "representation" of the areas
+
+-   markobs:
+
+    -   char
+
+    -   A mark exists on the animal at the time of observation
+
+    -   Lots of missing data, don't know what it means
+
+-   markobspos:
+
+    -   char
+
+    -   Also lots of missing data,
+
+    -   Location of the marks
+
+    -   L, R Lsh, idk what it means
+
+-   markadded:
+
+    -   char
+
+    -   When a mark was added to the seal
+
+    -   Similar problem to markobs
+
+-   markaddedpos
+
+    -   char
+
+    -   Where the mark was added
+
+    -   similar problems and values to markobspos
+
+-   obssex:
+
+    -   char
+
+    -   M/F
+
+    -   Misssing values
+
+-   obsage:
+
+    -   char
+
+    -   Values: Y, ad, juv, SA4, a-bY
+
+    -   some missing/empty data
+
+-   pctmolt:
+
+    -   numerical
+
+    -   Doesn't relate to us; seals literally molt their skin and hair; animal need to be marked once they finish molting (mark comes off with molting)
+
+    -   Lots of missing values
+
+-   comment:
+
+    -   characters
+
+    -   Literall comments of various sizes
+
+-   markcomment:
+
+    -   char
+
+    -   comment on comment
+
+-   dead:
+
+    -   numerical
+
+    -   0/1, technically binary (1 = observation was dead)
+
+    -   No missing values
+
+-   observer
+
+    -   char
+
+    -   names: X. XXX
+
+-   entrydate:
+
+    -   char
+
+    -   MM/DD/YY
+
+-   entry:
+
+    -   char
+
+    -   names: X. XXX
+
+    -   Aren't always the same as the observer!
+
+-   estimated:
+
+    -   num, literally all 0's, no missing values
+
+-   shark
+
+    -   char
+
+    -   "Comment includes shark" for all rows
+
+-   unsure:
+
+    -   num
+
+    -   Missing lots of values (180)
+
+    -   Binary data (0/1)
+
+-   cookiecutter:
+
+    -   numerical; technically binary
+
+    -   1 means cookie_cutter shark bite
+
+    -   Missing lots of values (180)
+
+## Gender of Seals grouped by year
+
+```{r}
+# Number of males/females logged by decade
+sum(bite_data$obssex %in% c("F", "f") & bite_data$season %in% c("1977", "1979"))
+sum(bite_data$obssex %in% c("M") & bite_data$season %in% c("1977", "1979"))
+sum(bite_data$obssex %in% c("", NA) & bite_data$season %in% c("1977", "1979"))
+
+sum(bite_data$obssex %in% c("F", "f") & bite_data$season %in% c("1982", "1986", "1988", "1989"))
+sum(bite_data$obssex %in% c("M") & bite_data$season %in% c("1982", "1986", "1988", "1989"))
+sum(bite_data$obssex %in% c("", NA) & bite_data$season %in% c("1982", "1986", "1988", "1989"))
+
+sum(bite_data$obssex %in% c("F", "f") & bite_data$season %in% c("1990", "1991", "1993", "1995"))
+sum(bite_data$obssex %in% c("M") & bite_data$season %in% c("1990", "1991", "1993", "1995"))
+sum(bite_data$obssex %in% c("", NA) & bite_data$season %in% c("1990", "1991", "1993", "1995"))
+
+c("2000":"2009")
+sum(bite_data$obssex %in% c("F", "f") & bite_data$season %in% c("2002":"2009"))
+sum(bite_data$obssex %in% c("M") & bite_data$season %in% c("2002":"2009"))
+sum(bite_data$obssex %in% c("", NA) & bite_data$season %in% c("2002":"2009"))
+
+# Attempt 2
+library(dplyr)
+
+bite_summary <- bite_data %>% count(season, obssex, name="total") %>% arrange(season, desc(total))
+print(bite_summary)
+
+bites_by_decade <- bite_summary %>% mutate(year = as.numeric(season)) %>% mutate(decade = floor(year / 10) * 10) %>% count(decade, obssex, name = "total") %>% arrange(decade, desc(total))
+print(bites_by_decade)
+```

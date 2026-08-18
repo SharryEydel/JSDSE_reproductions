@@ -1,0 +1,275 @@
+# Shark Resight Data EDA
+
+**Import Files and Make Dataframe**
+
+```{r}
+# File Set Up
+## Import packages
+install.packages("dplyr")
+library(tidyverse)
+library(stringr)
+library(ggplot2)
+
+## Import file (Sharry) (I have mine in "data")
+sharkbite <- read.csv("data/sharkresights.csv") #access limited to research collaborators 
+
+## Import file (Nat)
+#setwd("/Users/nataliebilal/Library/CloudStorage/OneDrive-Personal/R practice") 
+
+#sharkbite <- read.csv("sharkresights.csv") #access limited to research collaborators 
+
+#selecting relevant variables
+sharkbite_variables <- sharkbite %>% 
+  select(animalID, season, date, area, regionID, markobs, obssex, obsage, comment, dead) 
+View(sharkbite_variables) 
+```
+
+**Data Cleaning**
+
+```{r}
+#remove cookie cutter false positives
+sharkbite_nocookie <- sharkbite_variables %>% 
+  filter(!str_detect(comment, 'cutter')) %>%
+  filter(!str_detect(comment, 'CC')) %>%
+  filter(!str_detect(comment, 'not shark'))
+
+#cleaning sex variable 
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(obssex = case_when(
+    obssex == "" ~ NA_character_,
+    str_detect(obssex, 'F|f') ~ "F",
+    str_detect(obssex, 'M') ~ "M",
+    TRUE ~ obssex))
+
+#categorical bite location variable
+sharkbite_nocookie <- sharkbite_nocookie %>% 
+  mutate(bite_location = case_when(
+      str_detect(comment, 'flip|RF|FF') ~ "flipper",
+      str_detect(comment, 'low|end|butt|rump|chin|eye|neck|face|mouth') ~ "end",
+      TRUE ~ "body"))
+unique(sharkbite_nocookie$bite_location)
+
+#categorical ageclass variable
+sharkbite_nocookie <- sharkbite_nocookie %>% 
+  mutate(age_binary = case_when(
+      str_detect(obsage, 'ad|Ad') ~ "adult",
+      obsage == "" ~ NA_character_,
+      TRUE ~ "juvenile"))
+ 
+#recode non-Año locations
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(regionID = case_when(
+    regionID >= 12 & regionID <= 18 ~ NA,
+    TRUE ~ regionID))
+
+#recode locations to be more specific 
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(regionID = case_when(
+    area %in% c("1", "17", "8B") ~ 1,
+    area %in% c("TS", "TSB", "SBE", "SBEL") ~ 2,
+    area %in% c("TSW", "TSC", "TSD") ~ 3,
+    area %in% c("BBSL", "AP", "APB", "SB", "SBW") ~ 4,
+    area == "APG" ~ 5,
+    area %in% c("BMB", "BMb") ~ 6,
+    area %in% c("BMN", "BMNN", "BMS", "BMC", "BBSU", "BM") ~ 7,
+    area %in% c("MBB", "MBB/BBN", "MBBL") ~ 8,
+    area == "MBBU" ~ 9,
+    area %in% c("BBNS", "BBS") ~ 10,
+    area == "BBN" ~ 11,
+    area == "NPB1" ~ 12,
+    area == "NP" ~ 13,
+    area %in% c("NP0", "NP1") ~ 14,
+    area == "NPG1" ~ 15,
+    area %in% c("NP2", "npg2b") ~ 16,
+    area %in% c("NPG3", "NPG4") ~ 17,
+    area %in% c("NP3", "NP4", "NP5") ~ 18,
+    TRUE ~ regionID))
+
+#categorical North vs South vs Island areas of the colony 
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(area_NSI = case_when(
+    regionID == 1 ~ "island",
+    regionID %in% c(2, 3, 4) ~ "south",
+    regionID %in% c(13, 14, 15, 16, 17, 18, 19) ~ "north",
+    regionID %in% c(5, 6, 7, 8, 9, 10, 11, 12) ~ NA_character_,
+    TRUE ~ NA_character_))
+unique(sharkbite_nocookie$area_NSI)
+
+#categorical beach vs inland variable
+sharkbite_nocookie <- sharkbite_nocookie %>% 
+  mutate(area_beach = case_when(
+       regionID %in% c(1, 2, 4, 6, 8, 10, 11, 12, 13, 15, 16, 17) ~ "beach",
+       regionID %in% c(3, 5, 7, 9, 14, 18) ~ "inland",
+    TRUE ~ NA_character_))
+unique(sharkbite_nocookie$area_beach)
+
+# "Final look at data"
+summary(sharkbite_nocookie)
+```
+
+**All Unique Values of Columns**
+
+```{r}
+dim(sharkbite)
+dim(sharkbite_nocookie)
+
+unique(sharkbite_nocookie$animalID)
+unique(sharkbite_nocookie$season)
+# unique(sharkbite_nocookie$date)
+# unique(sharkbite_nocookie$area)
+unique(sharkbite_nocookie$regionID)
+# unique(sharkbite_nocookie$markobs)
+unique(sharkbite_nocookie$obssex)
+# unique(sharkbite_nocookie$obsage)
+# unique(sharkbite_nocookie$comment)
+# unique(sharkbite_nocookie$dead)
+unique(sharkbite_nocookie$bite_location)
+unique(sharkbite_nocookie$age_binary)
+unique(sharkbite_nocookie$area_NSI)
+unique(sharkbite_nocookie$area_beach)
+
+# Row 16 has an invalid date! May need to delete
+# sharkbite_nocookie[16,]
+```
+
+**Make Unique Dataframe** Don't run this; it will give an error!
+
+```{r}
+# Chi-Square Test for Independence: Age Class by Sex
+
+##Research question: what is the more common sex of older seals who return with sharkbites?
+##Hypothesis: older seals are more likely to be female because this sex forages in lower risk waters for shark encounters
+
+##set up: finding unique seals 
+duplicate_seal |> add_count(animalID) |> filter(n > 1) |> arrange(animalID)
+
+duplicate_seal_sorted <- duplicate_seal |> add_count(animalID) |> filter(n > 1) |> arrange(animalID)
+duplicate_seal_sorted
+
+#seals with 2 ages - need to just keep adult observations 
+#   9615 14243 17692 41117 47026 49594 
+
+#seal with 2 sexes (as a juvenile, no other sexes identified) - set as NA
+#   55642
+
+#arrange in recency order and keep only unique animalIDs
+unique_seals <- sharkbite_nocookie |>
+  group_by(animalID) |>
+  slice_max(order_by = season, n = 1, with_ties = FALSE) |>
+  ungroup()
+unique_seals
+
+##set up: creating 2x2 table
+chi_table <- table(unique_seals$obssex, unique_seals$age_binary)
+chi_table
+
+# Analysis: Fisher's exact test for small samples using table 
+fish_test <- fisher.test(matrix(c(23, 3, 5, 19), nrow = 2))
+
+##interpretation: survivor shark-bitten juveniles are more likely to be male, and adults are more likely to be female 
+
+#Visualization: create dataframe from contingency table for plotting 
+##create dataframe 
+chi_df <- as.data.frame(chi_table)
+colnames(chi_df) <- c("Sex", "Age Class", "Count")
+chi_df
+
+##rearrange for easy plotting 
+chi_df_plot <- chi_df[rep(1:nrow(chi_df), chi_df$Count), 1:2]
+rownames(chi_df_plot) <- NULL
+chi_df_plot
+
+##plot
+library(ggstatsplot)
+chi_plot <- ggbarstats(data = chi_df_plot,
+  x = Sex,
+  y = `Age Class`,         
+  results.subtitle = FALSE,
+  subtitle = paste0(
+    "Fisher's exact test, p-value ",
+    ifelse(fish_test$p.value < 0.001, "< 0.001", round(fish_test$p.value, 3))))
+chi_plot
+
+#I'll leave colors up to you if you'd like!
+```
+
+**Bar Graphs for Each Variable** *(age class, area, bite location, sex, year)*
+
+```{r}
+summary(sharkbite_nocookie)
+
+# Make binary columns based on bite location
+sharkbite_nocookie$flipper_bite <- ifelse(sharkbite_nocookie$bite_location == "flipper", 1, 0)
+sharkbite_nocookie$headrear_bite <- ifelse(sharkbite_nocookie$bite_location == "end", 1, 0)
+sharkbite_nocookie$body_bite <- ifelse(sharkbite_nocookie$bite_location == "body", 1, 0)
+unique(sharkbite_nocookie$obssex)
+
+# Make regionID a factor column not a numeric column:
+sharkbite_nocookie$regionID <- as.factor(sharkbite_nocookie$regionID)
+sharkbite_nocookie$flipper_bite <- as.factor(sharkbite_nocookie$flipper_bite)
+sharkbite_nocookie$headrear_bite <- as.factor(sharkbite_nocookie$headrear_bite)
+sharkbite_nocookie$body_bite <- as.factor(sharkbite_nocookie$body_bite)
+
+
+# GRAPHS
+# Age Class
+ggplot(sharkbite_nocookie, aes(x = age_binary)) + geom_bar() + labs(x = "Age (adult or juvinille)", y = "Count", title = "Count by Age")
+
+# Area
+ggplot(sharkbite_nocookie, aes(x = factor(regionID), fill = area_beach)) + 
+  geom_bar() + 
+  geom_text(stat = "count", aes(label = after_stat(count)), hjust = -0.2) + 
+  coord_flip() +
+  labs(x = "Region", y = "Count", fill = "Location", title = "Sighting by Region and Inland vs Beach") +
+  theme_minimal()
+
+# Bite Location
+ggplot(sharkbite_nocookie, aes(x = bite_location, fill = obssex)) +
+  geom_bar(position = "stack") +
+  labs(x = "Bite Location", y = "Count", fill = "Gender", title = "Total Bites by Location and Gender") +
+  theme_minimal()
+
+# Sex
+ggplot(sharkbite_nocookie, aes(x = obssex)) + geom_bar() + labs(x = "Seal's gender", y = "Count", title = "Count by Gender")
+
+# Year
+ggplot(sharkbite_nocookie, aes(x = season)) + geom_bar() + labs(x = "Year of Obsevations", y = "Count", title = "Number of observations by Year")
+
+```
+
+**Logistic Regression attempt:**
+
+-   flipper_log: Prediction of getting a Flipper bite by gender and age
+
+-   headrear_log: Prediction of getting a Head/rear bite by gender and age
+
+-   body_log: Prediction of getting a Body bite by gender and age
+
+```{r}
+# Clean data One last time
+sharkbite_log <- sharkbite_nocookie[complete.cases(sharkbite_nocookie$obssex), ]
+dim(sharkbite_log)
+dim(sharkbite_nocookie)
+
+# Fit the logistic model
+flipper_log <- glm(flipper_bite ~ obssex * age_binary, data = sharkbite_log, family = binomial(link = 'logit'))
+headrear_log <- glm(headrear_bite ~ obssex * age_binary, data = sharkbite_log, family = binomial(link = 'logit'))
+body_log <- glm(body_bite ~ obssex * age_binary, data = sharkbite_log, family = binomial(link = 'logit'))
+
+# View results
+summary(flipper_log)
+summary(headrear_log)
+summary(body_log)
+```
+
+**Checking Assumptions**
+
+```{r}
+# Check graphs for log regression
+par(mfrow = c(2, 2))
+plot(flipper_log)
+plot(headrear_log)
+plot(body_log)
+
+par(mfrow = c(1, 1))
+```

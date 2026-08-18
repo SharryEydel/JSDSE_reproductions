@@ -1,0 +1,374 @@
+# Shark Resight Data EDA
+
+\*\* Import Files and Make Dataframe \*\*
+
+```{r}
+# File Set Up
+## Import packages
+## Import packages
+library(tidyverse)
+library(stringr)
+library(ggplot2) 
+library(sf)
+
+## Import file
+sharkbite <- read.csv("sharkresights.csv") #access limited to research collaborators 
+
+# Initial Dataset Set Up: selecting relevant variables
+sharkbite_variables <- sharkbite %>% 
+  select(animalID, season, date, area, regionID, markobs, obssex, obsage, comment, dead)
+
+summary(sharkbite_variables)
+```
+
+**Data Cleaning**
+
+```{r}
+# Viewing unique categories across applicable variables
+unique(sharkbite_variables$animalID)
+unique(sharkbite_variables$season)
+unique(sharkbite_variables$area)
+unique(sharkbite_variables$regionID)
+unique(sharkbite_variables$markobs)
+unique(sharkbite_variables$obssex)
+unique(sharkbite_variables$obsage)
+
+#removing cookie cutter only cases 
+sharkbite_nocookie <- sharkbite_variables %>% 
+  filter(!str_detect(comment, 'cutter')) %>%
+  filter(!str_detect(comment, 'CC')) %>%
+  filter(!str_detect(comment, 'not shark'))
+
+#cleaning sex variable 
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(obssex = case_when(
+    obssex == "" ~ NA_character_,
+    str_detect(obssex, 'F|f') ~ "F",
+    str_detect(obssex, 'M') ~ "M",
+    TRUE ~ obssex))
+
+#categorical bite location variable
+sharkbite_nocookie <- sharkbite_nocookie %>% 
+  mutate(bite_location = case_when(
+      str_detect(comment, 'flip|RF|FF') ~ "flipper",
+      str_detect(comment, 'low|end|butt|rump|chin|eye|neck|face|mouth') ~ "end",
+      TRUE ~ "body"))
+
+#categorical ageclass variable
+sharkbite_nocookie <- sharkbite_nocookie %>% 
+  mutate(age_binary = case_when(
+      str_detect(obsage, 'ad|Ad') ~ "adult",
+      obsage == "" ~ NA_character_,
+      TRUE ~ "juvenile"))
+ 
+#recode non-Año locations
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(regionID = case_when(
+    regionID >= 12 & regionID <= 18 ~ NA,
+    TRUE ~ regionID))
+
+#recode locations to be more specific 
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(regionID = case_when(
+    area %in% c("1", "17", "8B") ~ 1,
+    area %in% c("TS", "TSB", "SBE", "SBEL") ~ 2,
+    area %in% c("TSW", "TSC", "TSD") ~ 3,
+    area %in% c("BBSL", "AP", "APB", "SB", "SBW") ~ 4,
+    area == "APG" ~ 5,
+    area %in% c("BMB", "BMb") ~ 6,
+    area %in% c("BMN", "BMNN", "BMS", "BMC", "BBSU", "BM") ~ 7,
+    area %in% c("MBB", "MBB/BBN", "MBBL") ~ 8,
+    area == "MBBU" ~ 9,
+    area %in% c("BBNS", "BBS") ~ 10,
+    area == "BBN" ~ 11,
+    area == "NPB1" ~ 12,
+    area == "NP" ~ 13,
+    area %in% c("NP0", "NP1") ~ 14,
+    area == "NPG1" ~ 15,
+    area %in% c("NP2", "npg2b") ~ 16,
+    area %in% c("NPG3", "NPG4") ~ 17,
+    area %in% c("NP3", "NP4", "NP5") ~ 18,
+    TRUE ~ regionID))
+
+#categorical North vs South vs Island areas of the colony 
+sharkbite_nocookie <- sharkbite_nocookie %>%
+  mutate(area_NSI = case_when(
+    regionID == 1 ~ "island",
+    regionID %in% c(2, 3, 4) ~ "south",
+    regionID %in% c(13, 14, 15, 16, 17, 18, 19) ~ "north",
+    regionID %in% c(5, 6, 7, 8, 9, 10, 11, 12) ~ NA_character_,
+    TRUE ~ NA_character_))
+
+#categorical beach vs inland variable
+sharkbite_nocookie <- sharkbite_nocookie %>% 
+  mutate(area_beach = case_when(
+       regionID %in% c(1, 2, 4, 6, 8, 10, 11, 12, 13, 15, 16, 17) ~ "beach",
+       regionID %in% c(3, 5, 7, 9, 14, 18) ~ "inland",
+    TRUE ~ NA_character_))
+
+# Row 16 has an invalid date! May need to be deleted.
+sharkbite_nocookie[16,]
+
+# Comparing dimensions of uncleaned and cleaned datasets 
+dim(sharkbite)
+dim(sharkbite_nocookie)
+
+# Final summary of dataset
+summary(sharkbite_nocookie)
+```
+
+**EDA**
+
+```{r}
+summary(sharkbite_nocookie)
+
+# Variable Transformations
+
+## Make binary columns based on bite location
+sharkbite_nocookie$flipper_bite <- ifelse(sharkbite_nocookie$bite_location == "flipper", 1, 0)
+sharkbite_nocookie$headrear_bite <- ifelse(sharkbite_nocookie$bite_location == "end", 1, 0)
+sharkbite_nocookie$body_bite <- ifelse(sharkbite_nocookie$bite_location == "body", 1, 0)
+unique(sharkbite_nocookie$obssex)
+
+## Convert variables to categorical
+sharkbite_nocookie$regionID <- as.factor(sharkbite_nocookie$regionID)
+sharkbite_nocookie$flipper_bite <- as.factor(sharkbite_nocookie$flipper_bite)
+sharkbite_nocookie$headrear_bite <- as.factor(sharkbite_nocookie$headrear_bite)
+sharkbite_nocookie$body_bite <- as.factor(sharkbite_nocookie$body_bite)
+
+# Vizualizations
+
+## Age Class
+ggplot(sharkbite_nocookie, aes(x = age_binary)) + geom_bar() + labs(x = "Age Class", y = "Count", title = "Count by Age Class")
+
+## Area
+ggplot(sharkbite_nocookie, aes(x = factor(regionID), fill = area_beach)) + 
+  geom_bar() + 
+  geom_text(stat = "count", aes(label = after_stat(count)), hjust = -0.2) + 
+  coord_flip() +
+  labs(x = "Region", y = "Count", fill = "Location", 
+       title = "Sighting by Region and Inland vs Beach") +
+  theme_minimal() +
+  scale_fill_manual(values = c(
+    "beach" = "#00BFC4",
+    "inland" = "#F87660",
+    "NA" = "grey80"
+  ))
+
+## Bite Location
+ggplot(sharkbite_nocookie, aes(x = bite_location, fill = obssex)) +
+  geom_bar(position = "stack") +
+  labs(x = "Bite Location", y = "Count", fill = "Sex", title = "Bites by Location and Sex") +
+  theme_minimal()
+
+## Sex
+ggplot(sharkbite_nocookie, aes(x = obssex)) + geom_bar() + labs(x = "Sex", y = "Count", title = "Count by Sex")
+
+## Year
+ggplot(sharkbite_nocookie, aes(x = season)) + geom_bar() + labs(x = "Obsevation Year", y = "Count", title = "Number of Observations by Year")
+
+
+# Special Graphs for report
+
+## Number of seals by sex; colored by bite
+ggplot(sharkbite_nocookie, aes(x = obssex, fill = bite_location)) +
+  geom_bar(position = "stack") +
+  labs(x = "Sex", y = "Count", fill = "Bite Location", title = "Seals by Sex and Bite Location") +
+  theme_minimal()
+
+## Frequency graph of animalID:
+sharkbite_nocookie$animalID <- as.factor(sharkbite_nocookie$animalID)
+
+ggplot(sharkbite_nocookie, aes(x = animalID)) + geom_bar() + labs(x = "animalID", y = "Frequency", title = "Frequency of Unique Seals in the Data") + theme_minimal() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+```
+
+**Analyses**
+
+**Fisher's Exact Test: Age Class by Sex**
+
+```{r}
+# Research Question: What is the more common sex of adult versus juvenile seals who return with sharkbites?
+# Hypothesis: Older seals are more likely to be female because this sex forages in lower risk waters for shark encounters
+
+# Set Up: finding duplicate seals 
+
+## Selecting key variables for this analysis 
+duplicate_seal <- sharkbite_nocookie |> 
+  select(animalID, obssex, age_binary)
+duplicate_seal
+
+## Sorting by animalID to find duplicates
+duplicate_seal |>
+   add_count(animalID) |>
+   filter(n > 1) |>
+   arrange(animalID)
+
+duplicate_seal_sorted <- duplicate_seal |> 
+  add_count(animalID) |>
+  filter(n > 1) |>
+  arrange(animalID)
+duplicate_seal_sorted
+
+## Seals with 2 ages - need to just keep adult observations 
+#   9615 14243 17692 41117 47026 49594 
+
+## Seal with 2 sexes (as a juvenile, no other sexes identified) - set as NA
+#   55642
+
+## Selecting each seal's most recent observation 
+unique_seals <- sharkbite_nocookie |>
+  group_by(animalID) |>
+  slice_max(order_by = season, n = 1, with_ties = FALSE) |>
+  ungroup()
+unique_seals
+
+# Set up: creating 2x2 contingency table
+chi_table <- table(unique_seals$obssex, unique_seals$age_binary)
+chi_table
+
+## Cells too small for Chi-square -> Fisher's exact test for small samples
+
+# Analysis
+fish_test <- fisher.test(matrix(c(23, 3, 5, 19), nrow = 2))
+fish_test
+
+# Interpretation: survived shark-bitten juveniles are more likely to be male, and adults are more likely to be female 
+
+# Visualization: create dataframe from contingency table for plotting 
+## Reate dataframe 
+chi_df <- as.data.frame(chi_table)
+colnames(chi_df) <- c("Sex", "Age Class", "Count")
+chi_df
+
+## Rearrange for easy plotting 
+chi_df_plot <- chi_df[rep(1:nrow(chi_df), chi_df$Count), 1:2]
+rownames(chi_df_plot) <- NULL
+chi_df_plot
+
+# Plot
+library(ggstatsplot)
+
+chi_plot <- ggbarstats(
+  data = chi_df_plot,
+  x = Sex,
+  y = `Age Class`,
+  main = "Survivorship Demographics",
+  results.subtitle = FALSE,
+  subtitle = paste0("Fisher's exact test, p-value ",
+    ifelse(fish_test$p.value < 0.001, "< 0.001", round(fish_test$p.value, 3)))) +
+  scale_fill_manual(values = c("M" = "lightblue", "F" = "blue"))
+chi_plot
+```
+
+**Logistic Regression**
+
+```{r}
+# Research Question: Can bite location be predicted by sex and/or age?
+# Hypothesis: Adults and juveniles may be biten in different locations because of their different body sizes. Adult males and females may be bitten in different locations because of different movement ecologies (dive behaviors) and body sizes 
+
+# Final Data Cleaning
+sharkbite_log <- sharkbite_nocookie[complete.cases(sharkbite_nocookie$obssex), ]
+dim(sharkbite_log)
+dim(sharkbite_nocookie)
+
+## Fit the logistic model
+
+### Prediction of bite on flipper by sex and age
+flipper_log <- glm(flipper_bite ~ obssex * age_binary, data = sharkbite_log, family = binomial(link = 'logit'))
+
+### Prediction of bite on head/rear by sex and age
+headrear_log <- glm(headrear_bite ~ obssex * age_binary, data = sharkbite_log, family = binomial(link = 'logit'))
+
+### Prediction of bite on body by sex and age
+body_log <- glm(body_bite ~ obssex * age_binary, data = sharkbite_log, family = binomial(link = 'logit'))
+
+## View Results
+summary(flipper_log)
+summary(headrear_log)
+summary(body_log)
+
+### Only body bite prediction converges
+
+## Checking Assumptions 
+par(mfrow = c(2, 2))
+
+plot(flipper_log)
+plot(headrear_log)
+plot(body_log)
+
+### All models fail to meet assumptions
+
+par(mfrow = c(1, 1))
+
+# Interpretation: No conclusions can be made as the data does not meet the necessary assumptions for analysis 
+
+```
+
+**Mapping**
+```{r}
+# Research Question: Will shark-bitten seal observation frequency differ by location on the colony?
+# Hypothesis: Seal observations will be greater on larger beach areas ("North Point" and "South Point")
+
+# Data Set Up
+
+## Load libraries
+library(sf)
+library(ggplot2)
+
+## Read in downloaded data (available via https://github.com/SharryE/STAT204_Project/blob/main/AñoCoordinates.xlsx)
+
+setwd("/Users/nataliebilal/STAT204/project")
+latlong <- read.csv("coordinates.csv")
+
+## Create coordinates into a dataframe
+latlong_df <- data.frame(
+  regionID = latlong$regionID,
+  latitude = latlong$lat, 
+  longitude = latlong$long)
+
+# Set Up Simple Features Objects
+
+## Coordinates 
+latlong_sf <- st_as_sf(latlong_df, coords = c("longitude", "latitude"), crs = 4326)
+
+## Map (California Coast – San Mateo) file at https://www.smcgov.org/isd/gis-data-download
+og_map <- st_read("/Users/nataliebilal/STAT204/project/OCEAN_BAY.shp") 
+
+### Modify dimensions 
+mod_map <- st_transform(og_map, 4326)
+
+### Set map coordinate restrictions
+bbox_pts <- st_bbox(latlong_sf)
+
+### Set padding 
+pad <- 0.01
+
+## Observations
+### Frequencies of locations 
+area_freq <- unique_seals %>%
+  group_by(regionID) %>%
+  summarise(freq = n())
+area_freq
+
+area_points <- latlong_sf %>%
+  left_join(area_freq, by = "regionID")
+
+# Plot 
+ggplot() +
+  geom_sf(data = mod_map, fill = "lightblue", color = "#ADD8E6") +
+  geom_sf(data = area_points, 
+    aes(size = freq), 
+    color = "red") +
+  scale_size_continuous(range = c(0.5, 3)) +
+  coord_sf(
+  xlim = c(bbox_pts["xmin"] - pad, bbox_pts["xmax"] + pad),
+  ylim = c(bbox_pts["ymin"] - pad, bbox_pts["ymax"] + pad),
+  expand = FALSE) +
+  labs(title = "Frequency of Observations by Area",
+    size = "Observation Count") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Interpretation: Shark bitten seals are found most frequently at North Point, South Point, and the middle of the colony ("Mid Bight Beach")
+```
