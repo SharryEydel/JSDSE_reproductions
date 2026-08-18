@@ -1,0 +1,111 @@
+---
+title: "Anonymizing survey"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(digest)
+here::i_am("processing_data/SurveyData.Rmd")
+library(here)
+```
+
+```{r}
+ground_truth <- read_csv(here("data", "raw", "survey", "2021-01-18T1119_Grades-Statistics_I.csv"))
+ground_truth <- ground_truth %>%
+  slice(-(1:2)) %>%
+  filter(Section == "202040STAT220-01 and 202040STAT220-53" | Section == "202040STAT220-01 and 202040STAT220-52") %>%
+  select(`SIS Login ID`, Section) %>%
+  rename(Q9 = `SIS Login ID`)
+
+ground_truth <- ground_truth %>%
+  mutate(Q9 = tolower(Q9)) %>%
+  mutate(Q9 = str_remove(Q9, "@stthomas.edu"))
+```
+
+```{r}
+raw_pre <- read_csv(here("data", "raw", "survey", "STAT 220 Fall 2020 pre-survey_January 18, 2021_09.42.csv"))
+
+raw_pre <- raw_pre %>%
+  slice(-2) %>%
+  select(-(StartDate:UserLanguage)) %>%
+  drop_na(Q9)
+
+
+raw_post <- read_csv(here("data", "raw", "survey", "STAT 220 Fall 2020 post-survey_January 18, 2021_09.26.csv"))
+
+raw_post <- raw_post %>%
+  slice(-2) %>%
+  select(-(StartDate:UserLanguage)) %>%
+  drop_na(Q9)
+```
+
+
+```{r identifiers}
+md5_1 <- getVDigest(algo = "md5")
+
+identifiers_pre <- raw_pre %>%
+  select(Q9) %>%
+  slice(-1) %>%
+  mutate(Q9 = tolower(Q9)) %>%
+  mutate(Q9_fixed = case_when(
+    str_detect(Q9, "@") ~ str_remove(Q9, "@stthomas.edu"),
+    TRUE ~ Q9)) 
+
+identifiers_post <- raw_post %>%
+  select(Q9) %>%
+  slice(-1) %>%
+  mutate(Q9 = tolower(Q9)) 
+
+identifiers <- identifiers_pre %>%
+  full_join(identifiers_post, by = c("Q9_fixed" = "Q9")) %>%
+  mutate(hash = md5_1(Q9)) 
+
+identifiers <- identifiers %>%
+  left_join(ground_truth, by = c("Q9_fixed" = "Q9"))
+
+identifiers <- identifiers %>%
+  mutate(Section = case_when(
+    is.na(Section) ~ "202040STAT220-01 and 202040STAT220-52", 
+                             TRUE ~ Section))
+```
+
+```{r, eval=FALSE}
+write_csv(identifiers, here("data", "raw", "survey", "identifiers.csv"))
+```
+
+```{r}
+identifiers <- read_csv(here("data", "raw", "survey", "identifiers.csv"))
+```
+
+```{r}
+anonymous_pre <- raw_pre %>%
+  mutate(Q9 = tolower(Q9)) %>%
+  left_join(identifiers) %>%
+  select(-Q9, -Q9_fixed)
+```
+
+```{r}
+anonymous_post <- raw_post %>%
+  mutate(Q9 = tolower(Q9)) %>%
+  left_join(identifiers, by = c("Q9" = "Q9_fixed")) %>%
+  select(-Q9, -Q9.y)
+```
+
+```{r}
+anonymous_pre <- anonymous_pre %>%
+  select(-Q22) 
+anonymous_post <- anonymous_post %>%
+  select(-Q25, -Q24)
+prepost <- anonymous_pre %>%
+  full_join(anonymous_post, by = "hash") %>%
+  select(-hash)
+```
+
+
+```{r, eval=FALSE}
+write_csv(anonymous_pre, here("data", "anonymized", "anonymous_pre.csv"))
+write_csv(anonymous_post, here("data", "anonymized", "anonymous_post.csv"))
+write_csv(prepost, here("data", "anonymized", "prepost.csv"))
+```

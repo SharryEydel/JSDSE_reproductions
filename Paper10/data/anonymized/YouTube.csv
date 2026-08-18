@@ -1,0 +1,41 @@
+week,Video,Video title,Video publish time,Unique viewers,Views,Watch time (hours),Subscribers,Impressions,Impressions click-through rate (%),weeknum,section,tot_sec
+week2,4cfkNnwJH4A,Describing data pre-lab (formula) video 1 of 1,"Sep 14, 2020",31,66,9.452,0,317,7.26,2,formula,1299
+week2,vMZXK_RJ-_k,Describing data pre-lab (tidy) video 1 of 1,"Sep 16, 2020",27,58,7.7649,1,101,17.82,2,tidy,1292
+week3,_nztp2ZGd6I,Categorical variables pre-lab (formula) part 1/2,"Sep 22, 2020",34,60,8.2932,0,265,9.06,3,formula,1204
+week3,JgejphW9re0,Categorical variables pre-lab (formula) part 2/2,"Sep 22, 2020",27,48,3.6304,0,178,13.48,3,formula,473
+week3,Q3HJSCG3GOQ,Categorical variables pre-lab (tidy) part 2/2,"Sep 24, 2020",25,39,4.364,0,125,12.8,3,tidy,756
+week3,Ir-LeWndP70,Categorical variables pre-lab (tidy) part 1/2,"Sep 24, 2020",26,38,7.1932,0,127,7.87,3,tidy,1361
+week4,K0GPIZBJd_0,Quantitative variables pre-lab (formula) part 1/2,"Sep 28, 2020",25,46,6.2361,0,197,7.11,4,formula,1098
+week4,f2TKQYizfqA,Quantitative variables pre-lab (tidy) part 1/2,"Sep 30, 2020",24,45,5.3269,0,163,14.11,4,tidy,950
+week4,siB6pydmQYY,Quantitative variables pre-lab (tidy) part 2/2,"Sep 30, 2020",25,39,2.3034,0,139,15.11,4,tidy,524
+week4,sdD982FqoYA,Quantitative variables pre-lab (formula) part 2/2,"Sep 28, 2020",19,38,1.7508,0,165,11.52,4,formula,374
+week5,j5mu5XcJD_w,Regression pre-lab (tidy) video 1 of 1,"Oct 7, 2020",23,37,5.7788,0,82,6.1,5,tidy,1196
+week5,VVqvEgYkNcs,Regression pre-lab (formula) video 1 of 1,"Oct 6, 2020",22,28,6.3498,1,149,2.01,5,formula,1130
+week6,31Gy5OnjcPA,Bootstrap pre-lab (formula) part 2/2,"Mar 27, 2020",18,33,4.8728,0,31,35.48,6,formula,982
+week6,AyK0ko_aEWw,Bootstrap pre-lab (formula) part 1/2,"Mar 27, 2020",20,32,1.1977,0,50,16,6,formula,271
+week6,IPQaqi6rP0o,Bootstrap pre-lab (tidy) part 2/2,"Mar 27, 2020",17,26,2.8684,0,25,48,6,tidy,909
+week6,FE6_NrUXgMI,Bootstrap pre-lab (tidy) part 1/2,"Mar 27, 2020",17,25,1.3191,0,42,16.67,6,tidy,320
+week7,2KwN-JrVfwQ,Randomization pre-lab (tidy),"Apr 2, 2020",17,30,3.7164,0,10,40,7,tidy,792
+week7,CuvKLvAGb68,Randomization pre-lab (formula),"Apr 2, 2020",20,30,4.9789,0,10,40,7,formula,784
+week8,51ubvJt3fu4,Inference for a single sample pre-lab (formula) part 2/3,"Apr 9, 2020",19,34,3.1846,0,58,22.41,8,formula,600
+week8,H8msMGkUmp0,Inference for a single proportion pre-lab (tidy) video 1 of 1,"Oct 28, 2020",19,31,4.046,0,140,18.57,8,tidy,1028
+week8,MNvJll40ras,Inference for a single sample pre-lab (formula) part 1/3,"Apr 9, 2020",15,24,0.6172,0,52,7.69,8,formula,129
+week8,iQuVZiBqy2s,Inference for a single sample pre-lab (formula) part 3/3,"Apr 9, 2020",16,22,1.3168,0,24,29.17,8,formula,396
+week9,VvjImYrUobA,Inference for a single mean pre-lab (tidy) video 1 of 1,"Nov 5, 2020",19,27,2.6717,0,77,6.49,9,tidy,1017
+week9,iQuVZiBqy2s,Inference for a single sample pre-lab (formula) part 3/3,"Apr 9, 2020",14,23,1.0572,0,2,0,9,formula,396
+week9,51ubvJt3fu4,Inference for a single sample pre-lab (formula) part 2/3,"Apr 9, 2020",2,2,0.3183,0,7,14.29,9,formula,600
+week9,MNvJll40ras,Inference for a single sample pre-lab (formula) part 1/3,"Apr 9, 2020",0,NA,NA,NA,2,0,9,formula,129
+week10,4zVAN4gqAmQ,Inference for two samples pre-lab (tidy) part 1 of 2,"Nov 12, 2020",13,22,2.116,0,99,4.04,10,tidy,825
+week10,lvZphz3-oXE,Inference for two samples pre-lab (tidy) part 2 of 2,"Nov 12, 2020",10,20,1.2784,0,97,14.43,10,tidy,817
+week10,Mwt1FHU2xVM,Inference for two samples pre-lab (formula) part 1 of 2,"Apr 30, 2020",14,19,1.9314,0,3,33.33,10,formula,555
+week10,m1DDEvAdlKI,Inference for two samples pre-lab (formula) part 2 of 2,"Apr 30, 2020",13,15,1.898,0,7,28.57,10,formula,604
+week13,iul28zUiCM4,ANOVA pre-lab (tidy) part 1/2,"May 7, 2020",14,26,2.1112,0,10,10,13,tidy,492
+week13,kXJOwsRqd8g,ANOVA pre-lab (tidy) part 2/2,"May 7, 2020",13,25,2.3086,0,28,39.29,13,tidy,644
+week13,tuYOjkvvwlg,ANOVA pre-lab (formula) part 2/2,"May 7, 2020",16,20,2.1669,0,18,11.11,13,formula,585
+week13,v3ozvy6G7Ns,ANOVA pre-lab (formula) part 1/2,"May 7, 2020",16,20,1.4796,0,10,10,13,formula,352
+week14,WfNRZfd9z-Y,Chi-square pre-lab (tidy) video 1 of 1,"Dec 9, 2020",21,26,2.1093,0,136,2.21,14,tidy,490
+week14,UDOno8z9Txw,Chi-square pre-lab (formula) video 1 of 1,"Dec 7, 2020",18,21,1.7574,0,114,0.88,14,formula,397
+week15,MkjiMRhKNt4,"Inference for regression pre-lab, part 2 of 3","Apr 23, 2020",18,22,2.7016,0,36,19.44,15,NA,803
+week15,Xy8zbV9bA7A,"Inference for regression pre-lab, part 3 of 3","Dec 14, 2020",18,20,1.3613,0,214,2.8,15,NA,426
+week15,TY30JLeYwKA,"Inference for regression pre-lab (tidy), part 1 of 3","Apr 23, 2020",9,13,0.6547,0,29,6.9,15,tidy,402
+week15,KqBatgijU60,"Inference for regression pre-lab (formula), part 1 of 3","Apr 23, 2020",10,12,0.8136,0,18,5.56,15,formula,390

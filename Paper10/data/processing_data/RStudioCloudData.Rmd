@@ -1,0 +1,172 @@
+---
+title: "RStudio Cloud data loading and cleaning"
+output: html_document
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(jsonlite)
+here::i_am("data/processing_data/RStudioCloudData.Rmd")
+library(here)
+```
+
+```{r}
+september <- fromJSON(here("data", "raw", "rstudio_cloud", "tidy", "September.txt"), flatten = TRUE)$results %>%
+  select(user_id, user_display_name, user_first_name,
+         user_last_name, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    sept_active = summary.active_projects,
+    sept_compute = summary.compute
+  )
+
+october <- fromJSON(here("data", "raw", "rstudio_cloud", "tidy", "October.txt"), flatten = TRUE)$results %>%
+  select(user_id, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    oct_active = summary.active_projects,
+    oct_compute = summary.compute
+  )
+
+# november <- fromJSON(here("data", "raw", "rstudio_cloud", "tidy", "November.txt"), flatten = TRUE)$results %>%
+#   select(user_id, summary.active_projects,
+#          summary.compute) %>%
+#   rename(
+#     nov_active = summary.active_projects,
+#     nov_compute = summary.compute
+#   )
+
+december <- fromJSON(here("data", "raw", "rstudio_cloud", "tidy", "December.txt"), flatten = TRUE)$results %>%
+  select(user_id, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    dec_active = summary.active_projects,
+    dec_compute = summary.compute
+  )
+```
+
+```{r}
+all_months <- september %>%
+  left_join(october, by = "user_id") %>%
+  # left_join(november, by = "user_id") %>%
+  left_join(december, by = "user_id")
+
+all_months <- all_months %>%
+  filter(user_first_name != "Amelia") %>%
+  select(-contains("user")) %>%
+  filter(oct_active == 1)
+```
+
+```{r}
+write_csv(all_months, here("data", "anonymized",  "tidy_rstudio.csv"))
+```
+
+
+## formula
+
+
+```{r}
+september <- fromJSON(here("data", "raw", "rstudio_cloud", "formula", "September.txt"), flatten = TRUE)$results %>%
+  select(user_id, user_display_name, user_first_name,
+         user_last_name, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    sept_active = summary.active_projects,
+    sept_compute = summary.compute
+  )
+
+october <- fromJSON(here("data", "raw", "rstudio_cloud", "formula", "October.txt"), flatten = TRUE)$results %>%
+  select(user_id, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    oct_active = summary.active_projects,
+    oct_compute = summary.compute
+  )
+
+november <- fromJSON(here("data", "raw", "rstudio_cloud", "formula", "November.txt"), flatten = TRUE)$results %>%
+  select(user_id, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    nov_active = summary.active_projects,
+    nov_compute = summary.compute
+  )
+
+december <- fromJSON(here("data", "raw", "rstudio_cloud", "formula", "December.txt"), flatten = TRUE)$results %>%
+  select(user_id, summary.active_projects,
+         summary.compute) %>%
+  rename(
+    dec_active = summary.active_projects,
+    dec_compute = summary.compute
+  )
+```
+
+```{r}
+all_months <- september %>%
+  left_join(october, by = "user_id") %>%
+  left_join(november, by = "user_id") %>%
+  left_join(december, by = "user_id")
+
+all_months <- all_months %>%
+  filter(user_first_name != "Amelia") %>%
+  select(-contains("user")) %>%
+  filter(oct_active == 1)
+```
+
+```{r}
+write_csv(all_months, here("data", "anonymized", "formula_rstudio.csv"))
+```
+
+
+## Reading the data back in
+
+```{r}
+tidy <- read_csv(here("data", "anonymized", "tidy_rstudio.csv")) %>%
+  select(contains("compute")) %>%
+  mutate(ID = paste0("tidy", 1:21))
+formula <- read_csv(here("data", "anonymized", "formula_rstudio.csv")) %>%
+  select(contains("compute")) %>%
+  mutate(ID = paste0("formula", 1:20))
+```
+
+
+## Summarizing by section
+
+```{r}
+tidy_summarize <- tidy %>%
+  summarize(across(everything(), list(mean = mean, sd = sd))) %>%
+  pivot_longer(everything(), names_to = "what", values_to = "number")
+
+formula_summarize <- formula %>%
+  summarize(across(everything(), list(mean = mean, sd = sd))) %>%
+  pivot_longer(everything(), names_to = "what", values_to = "number")
+
+both_summarize <- tidy_summarize %>%
+  left_join(formula_summarize, by = "what") %>%
+  mutate(diff = number.x - number.y)
+both_summarize <- both_summarize %>%
+  rename(number_tidy = number.x, number_formula = number.y)
+```
+
+Okay, looks like the formula folks are almost always spending less time on RStudio Cloud. But, would be nice to be able to visualize it. And this isn't the right format. 
+
+
+```{r}
+tidy_tall <- tidy %>%
+  pivot_longer(-ID, names_to = "month", values_to = "amount") %>%
+  mutate(section = "tidy")
+
+formula_tall <- formula %>%
+  pivot_longer(-ID, names_to = "month", values_to = "amount") %>%
+  mutate(section = "formula")
+
+both_tall <- bind_rows(tidy_tall, formula_tall)
+
+both_tall <- both_tall %>%
+  mutate(month = as_factor(month)) %>%
+  mutate(month = fct_recode(month, September = "sept_compute", October = "oct_compute", November = "nov_compute", December = "dec_compute"))
+```
+
+```{r}
+write_csv(both_tall, here("data", "processed", "rstudio_cloud.csv"))
+```

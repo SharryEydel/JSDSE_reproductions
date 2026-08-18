@@ -1,0 +1,216 @@
+---
+title: "YouTube data import and cleaning"
+output: html_document
+---
+
+```{r setup, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+library(tidyverse)
+here::i_am("data/processing_data/YouTubeData.Rmd")
+library(here)
+```
+
+## Moving from raw data to processed data
+
+```{r}
+week2 <- read_csv(here("data", "YouTube", "Video 2020-09-13_2020-09-20 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Describing data"))
+```
+
+```{r}
+week3 <- read_csv(here("data", "YouTube", "Video 2020-09-20_2020-09-27 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Categorical variables"))
+```
+
+```{r}
+week4 <- read_csv(here("data", "YouTube", "Video 2020-09-27_2020-10-04 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Quantitative variables"))
+```
+
+```{r}
+week5 <- read_csv(here("data", "YouTube", "Video 2020-10-04_2020-10-11 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Regression pre-lab"))
+```
+
+```{r}
+week6 <- read_csv(here("data", "YouTube", "Video 2020-10-11_2020-10-18 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Bootstrap"))
+```
+
+```{r}
+week7 <- read_csv(here("data", "YouTube", "Video 2020-10-18_2020-10-25 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Randomization"))
+```
+
+```{r}
+week8 <- read_csv(here("data", "YouTube", "Video 2020-10-25_2020-11-01 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Inference for a single")) %>%
+  filter(Video %in% c("H8msMGkUmp0", "MNvJll40ras", "51ubvJt3fu4", "iQuVZiBqy2s")) %>%
+  distinct()
+```
+
+```{r}
+week9 <- read_csv(here("data", "YouTube", "Video 2020-11-01_2020-11-08 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "mean") | str_detect(`Video title`, "single sample")) 
+```
+
+```{r}
+week10 <- read_csv(here("data",  "YouTube", "Video 2020-11-08_2020-11-15 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "two samples"))
+```
+
+```{r}
+assessment_week11 <- read_csv(here("data",  "YouTube", "Video 2020-11-15_2020-11-22 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) 
+# then thanksgiving_week12
+```
+
+```{r}
+week13 <- read_csv(here("data",  "YouTube", "Video 2020-11-29_2020-12-06 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "ANOVA"))
+```
+
+```{r}
+week14 <- read_csv(here("data",  "YouTube", "Video 2020-12-06_2020-12-13 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Chi-square"))
+```
+
+```{r}
+week15 <- read_csv(here("data",  "YouTube", "Video 2020-12-13_2020-12-20 Amelia McNamara", "Table data.csv")) %>%
+  filter(str_detect(`Video title`, "Inference for regression pre-lab"))
+```
+
+```{r}
+labs <- bind_rows(list(week2 = week2, week3 = week3, week4 = week4, week5 = week5, week6 = week6, week7 = week7, week8 = week8, week9 = week9, week10 = week10, week13 = week13, week14 = week14, week15 = week15), .id = "week")
+```
+
+```{r}
+labs <- labs %>%
+  mutate(weeknum = parse_number(week)) %>%
+  mutate(section = case_when(
+    str_detect(`Video title`, "formula") ~ "formula",
+    str_detect(`Video title`, "tidy") ~ "tidy",
+    TRUE ~ NA_character_))
+```
+
+```{r}
+lengths <- read_csv(here("data",  "YouTube", "video_lengths.csv"), col_names = c("video", "length", "X3"), skip=1, col_types = cols(
+  video = col_character(),
+  length = col_character(),
+  X3 = col_logical()
+)) %>%
+  select(-X3) %>%
+  separate(length, into = c("minutes", "seconds"), sep = ":") %>%
+  mutate(minutes = parse_number(minutes), seconds = parse_number(seconds)) %>%
+  mutate(tot_sec = minutes*60+seconds) %>%
+  select(video, tot_sec) %>%
+  distinct()
+```
+
+```{r}
+labs <- labs %>%
+  left_join(lengths, by = c("Video" = "video"))
+```
+
+```{r}
+write_csv(labs, here("data", "anonymized", "YouTube.csv"))
+```
+
+
+## Data for comparison
+
+```{r}
+yt_filenames <- list.files(path = here("data", "YouTube"), recursive = TRUE, full.names = TRUE)[str_detect(yt_filenames$filename, "Table data.csv")]
+
+yt_alldata <- yt_filenames %>%
+  map_dfr(~read_csv(.x), .id = "filename") %>%
+  filter(str_detect(`Video title`, "tidy") | str_detect(`Video title`, "formula")) %>%
+  filter(str_detect(`Video title`, "Describing data"))
+
+yt_alldata <- yt_alldata %>%
+  mutate(weeknum = parse_number(filename)) %>%
+  mutate(section = case_when(
+    str_detect(`Video title`, "formula") ~ "formula",
+    str_detect(`Video title`, "tidy") ~ "tidy",
+    TRUE ~ NA_character_))
+```
+
+```{r}
+ggplot(yt_alldata) + geom_line(aes(x=weeknum, y=Views, color = section))
+```
+
+
+## Moving from anonymized data to processed data
+
+```{r}
+youtube <- read_csv(here("data", "anonymized", "YouTube.csv")) %>%
+  mutate(week = as_factor(weeknum))
+```
+
+## Per video
+
+```{r}
+ifr_tidy <- youtube %>%
+  filter(week == 15 & is.na(section)) %>%
+  mutate(section = "tidyverse") 
+ifr_formula <- youtube %>%
+  filter(week == 15 & is.na(section)) %>%
+  mutate(section = "formula") 
+ifr <- ifr_tidy %>%
+  bind_rows(ifr_formula)
+
+youtube <- youtube %>%
+  drop_na(Views) %>%
+  filter(!is.na(section)) %>%
+  bind_rows(ifr) %>%
+  mutate(tot_min = tot_sec/60) %>%
+  separate(`Video title`, into = c("week_topic", "which"), sep = "pre-lab", remove = FALSE) %>%
+  mutate(week_topic = str_trim(week_topic)) %>%
+  select(-which) %>%
+   mutate(section = if_else(section == "tidy", "tidyverse", section))%>%
+  mutate(week_topic = case_when(
+    week_topic == "Inference for a single sample" & week == 8 ~ "Inference for a single proportion",
+    week_topic == "Inference for a single sample" & week == 9 ~ "Inference for a single mean",
+    TRUE ~ week_topic))
+```
+
+```{r}
+write_csv(youtube, here("data", "processed", "youtube_videos.csv"))
+```
+
+## Per week 
+```{r}
+weeks <- youtube %>%
+  group_by(week, section) %>%
+  summarize(n_videos = n(), watches = mean(Views), 
+         uniques = mean(`Unique viewers`),
+         hours = sum(`Watch time (hours)`),
+         tot_length = sum(tot_sec), topic = first(week_topic)) %>%
+  mutate(tot_min = tot_length/60)
+```
+
+```{r}
+weeks <- weeks %>%
+  mutate(mpu = (hours/uniques)*60, 
+         mps = (hours/21)*60, 
+         percent_per_student = mps/tot_min, 
+         percent_per_user = mpu/tot_min)
+# Don't know why I was dividing by 20 for the formula section...
+  # mutate(mps = case_when(section == "formula" ~ (hours/20)*60,
+  #                        section == "tidy" ~ (hours/21)*60)) %>%
+```
+
+```{r}
+write_csv(weeks, here("data", "processed", "youtube_weeks.csv"))
+```

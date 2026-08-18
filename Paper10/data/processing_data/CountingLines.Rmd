@@ -1,0 +1,60 @@
+---
+title: "RMarkdown lengths"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+```
+
+This document shows how I generated the dataset `lablines.csv`. 
+
+## Step 1: Get the names of all the RMarkdown files
+
+This file uses the `here` package to create paths. 
+
+```{r}
+tidyfolder <- here("data/raw/tidy/blank")
+formulafolder <- here("data/raw/formula/blank")
+tidyfiles <- list.files(path = tidyfolder, full.names=TRUE) 
+names(tidyfiles) <- list.files(path = tidyfolder)
+formulafiles <- list.files(path = formulafolder, full.names=TRUE)
+names(formulafiles) <- list.files(path = formulafolder)
+```
+
+## Step 2: Read the RMarkdown documents
+
+```{r}
+tidyfiles_full <- tidyfiles %>%
+  map(read_lines, skip_empty_rows = TRUE) %>%
+  map_int(length) %>%
+  as_tibble(rownames = "file") %>%
+  rename(lines = value)
+formulafiles_full <- formulafiles %>%
+  map(read_lines, skip_empty_rows = TRUE) %>%
+  map_int(length) %>%
+  as_tibble(rownames = "file") %>%
+  rename(lines = value)
+```
+
+## Step 3: Join the formula and tidyverse data
+
+```{r}
+tidyfiles_full <- tidyfiles_full %>%
+  mutate(section = "tidy") %>%
+  mutate(file = str_remove(file, "[:digit:]{2}-STAT_220_"), 
+         file = str_remove(file, "PreLab-tidy.Rmd"))
+formulafiles_full <- formulafiles_full %>%
+  mutate(section = "formula") %>%
+  mutate(file = str_remove(file, "[:digit:]{2}-STAT_220_"), 
+         file = str_remove(file, "PreLab-formula.Rmd"))
+labs <- tidyfiles_full %>%
+  bind_rows(formulafiles_full) 
+```
+
+## Step 4: Write out data
+```{r}
+write_csv(labs, here("data", "processed", "lablines.csv"))
+```
